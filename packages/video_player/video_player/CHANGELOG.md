@@ -1,3 +1,8 @@
+## 2.1.6
+
+* Remove obsolete pre-1.0 warning from README.
+* Add iOS unit and UI integration test targets.
+
 ## 2.1.5
 
 * Update example code in README to fix broken url.
