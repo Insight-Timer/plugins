@@ -78,7 +78,8 @@ typedef NS_ENUM(NSInteger, ImagePickerClassType) { UIImagePickerClassType, PHPic
   _pickerViewController = [[PHPickerViewController alloc] initWithConfiguration:config];
   _pickerViewController.delegate = self;
 
-  [self checkPhotoAuthorizationForAccessLevel];
+  [self showPhotoLibrary:UIImagePickerClassType];
+//  [self checkPhotoAuthorizationForAccessLevel];
 }
 
 - (void)pickImageWithUIImagePicker {
