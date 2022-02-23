@@ -11,8 +11,10 @@ First, add `image_picker` as a [dependency in your pubspec.yaml file](https://fl
 
 ### iOS
 
+This plugin requires iOS 9.0 or higher.
+
 Starting with version **0.8.1** the iOS implementation uses PHPicker to pick (multiple) images on iOS 14 or higher.
-As a result of implementing PHPicker it becomes impossible to pick HEIC images on the iOS simulator in iOS 14+. This is a known issue. Please test this on a real device, or test with non-HEIC images until Apple solves this issue.[63426347 - Apple known issue](https://www.google.com/search?q=63426347+apple&sxsrf=ALeKk01YnTMid5S0PYvhL8GbgXJ40ZS[…]t=gws-wiz&ved=0ahUKEwjKh8XH_5HwAhWL_rsIHUmHDN8Q4dUDCA8&uact=5) 
+As a result of implementing PHPicker it becomes impossible to pick HEIC images on the iOS simulator in iOS 14+. This is a known issue. Please test this on a real device, or test with non-HEIC images until Apple solves this issue. [63426347 - Apple known issue](https://www.google.com/search?q=63426347+apple&sxsrf=ALeKk01YnTMid5S0PYvhL8GbgXJ40ZS[…]t=gws-wiz&ved=0ahUKEwjKh8XH_5HwAhWL_rsIHUmHDN8Q4dUDCA8&uact=5)
 
 Add the following keys to your _Info.plist_ file, located in `<project root>/ios/Runner/Info.plist`:
 
@@ -24,7 +26,11 @@ Add the following keys to your _Info.plist_ file, located in `<project root>/ios
 
 Starting with version **0.8.1** the Android implementation support to pick (multiple) images on Android 4.3 or higher.
 
-No configuration required - the plugin should work out of the box.
+No configuration required - the plugin should work out of the box. It is 
+however highly recommended to prepare for Android killing the application when
+low on memory. How to prepare for this is discussed in the [Handling 
+MainActivity destruction on Android](#handling-mainactivity-destruction-on-android)
+section.
 
 It is no longer required to add `android:requestLegacyExternalStorage="true"` as an attribute to the `<application>` tag in AndroidManifest.xml, as `image_picker` has been updated to make use of scoped storage.
 
@@ -37,96 +43,62 @@ If you require your picked image to be stored permanently, it is your responsibi
 import 'package:image_picker/image_picker.dart';
 
     ...
-    final PickedFile? pickedFile = await picker.getImage(source: ImageSource.camera);
+    final ImagePicker _picker = ImagePicker();
+    // Pick an image
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    // Capture a photo
+    final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
+    // Pick a video
+    final XFile? image = await _picker.pickVideo(source: ImageSource.gallery);
+    // Capture a video
+    final XFile? video = await _picker.pickVideo(source: ImageSource.camera);
+    // Pick multiple images
+    final List<XFile>? images = await _picker.pickMultiImage();
     ...
 ```
 
 ### Handling MainActivity destruction on Android
 
-Android system -- although very rarely -- sometimes kills the MainActivity after the image_picker finishes. When this happens, we lost the data selected from the image_picker. You can use `retrieveLostData` to retrieve the lost data in this situation. For example:
+When under high memory pressure the Android system may kill the MainActivity of
+the application using the image_picker. On Android the image_picker makes use 
+of the default `Intent.ACTION_GET_CONTENT` or `MediaStore.ACTION_IMAGE_CAPTURE` 
+intents. This means that while the intent is executing the source application 
+is moved to the background and becomes eligable for cleanup when the system is
+low on memory. When the intent finishes executing, Android will restart the 
+application. Since the data is never returned to the original call use the 
+`ImagePicker.retrieveLostData()` method to retrieve the lost data. For example:
 
 ```dart
-Future<void> retrieveLostData() async {
-  final LostData response =
-      await picker.getLostData();
+Future<void> getLostData() async {
+  final LostDataResponse response =
+      await picker.retrieveLostData();
   if (response.isEmpty) {
     return;
   }
-  if (response.file != null) {
-    setState(() {
-      if (response.type == RetrieveType.video) {
-        _handleVideo(response.file);
-      } else {
-        _handleImage(response.file);
-      }
-    });
+  if (response.files != null) {
+    for (final XFile file in response.files) {
+      _handleFile(file);
+    }
   } else {
     _handleError(response.exception);
   }
 }
 ```
 
-There's no way to detect when this happens, so calling this method at the right place is essential. We recommend to wire this into some kind of start up check. Please refer to the example app to see how we used it.
+This check should always be run at startup in order to detect and handle this 
+case. Please refer to the 
+[example app](https://pub.dev/packages/image_picker/example) for a more 
+complete example of handling this flow.
 
-On Android, `getLostData` will only get the last picked image when picking multiple images, see: [#84634](https://github.com/flutter/flutter/issues/84634).
+## Migrating to 0.8.2+
 
-## Deprecation warnings in `pickImage`, `pickVideo` and `LostDataResponse`
-
-Starting with version **0.6.7** of the image_picker plugin, the API of the plugin changed slightly to allow for web implementations to exist.
-
-The **old methods that returned `dart:io` File objects were marked as deprecated**, and a new set of methods that return [`PickedFile` objects](https://pub.dev/documentation/image_picker_platform_interface/latest/image_picker_platform_interface/PickedFile-class.html) were introduced.
-
-### How to migrate from to ^0.6.7
-
-#### Instantiate the `ImagePicker`
-
-The new ImagePicker API does not rely in static methods anymore, so the first thing you'll need to do is to create a new instance of the plugin where you need it:
-
-```dart
-final _picker = ImagePicker();
-```
+Starting with version **0.8.2** of the image_picker plugin, new methods have been added for picking files that return `XFile` instances (from the [cross_file](https://pub.dev/packages/cross_file) package) rather than the plugin's own `PickedFile` instances. While the previous methods still exist, it is already recommended to start migrating over to their new equivalents. Eventually, `PickedFile` and the methods that return instances of it will be deprecated and removed.
 
 #### Call the new methods
 
-The new methods **receive the same parameters as before**, but they **return a `PickedFile`, instead of a `File`**. The `LostDataResponse` class has been replaced by the [`LostData` class](https://pub.dev/documentation/image_picker_platform_interface/latest/image_picker_platform_interface/LostData-class.html).
-
 | Old API | New API |
 |---------|---------|
-| `File image = await ImagePicker.pickImage(...)` | `PickedFile image = await _picker.getImage(...)` |
-| `File video = await ImagePicker.pickVideo(...)` | `PickedFile video = await _picker.getVideo(...)` |
-| `LostDataResponse response = await ImagePicker.retrieveLostData()` | `LostData response = await _picker.getLostData()` |
-
-#### `PickedFile` to `File`
-
-If your app needs dart:io `File` objects to operate, you may transform `PickedFile` to `File` like so:
-
-```dart
-final pickedFile = await _picker.getImage(...);
-final File file = File(pickedFile.path);
-```
-
-You may also retrieve the bytes from the pickedFile directly if needed:
-
-```dart
-final bytes = await pickedFile.readAsBytes();
-```
-
-#### Getting ready for the web platform
-
-Note that on the web platform (`kIsWeb == true`), `File` is not available, so the `path` of the `PickedFile` will point to a network resource instead:
-
-```dart
-if (kIsWeb) {
-  image = Image.network(pickedFile.path);
-} else {
-  image = Image.file(File(pickedFile.path));
-}
-```
-
-Alternatively, the code may be unified at the expense of memory utilization:
-
-```dart
-image = Image.memory(await pickedFile.readAsBytes())
-```
-
-Take a look at the changes to the `example` app introduced in version 0.6.7 to see the migration steps applied there.
+| `PickedFile image = await _picker.getImage(...)` | `XFile image = await _picker.pickImage(...)` |
+| `List<PickedFile> images = await _picker.getMultiImage(...)` | `List<XFile> images = await _picker.pickMultiImage(...)` |
+| `PickedFile video = await _picker.getVideo(...)` | `XFile video = await _picker.pickVideo(...)` |
+| `LostData response = await _picker.getLostData()` | `LostDataResponse response = await _picker.retrieveLostData()` |
