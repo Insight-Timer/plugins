@@ -133,7 +133,7 @@ typedef NS_ENUM(NSInteger, ImagePickerClassType) { UIImagePickerClassType, PHPic
 
   self.maxImagesAllowed = maxImagesAllowed;
 
-  [self showPhotoLibrary:PHPickerClassType];
+  [self showPhotoLibraryWithPHPicker:_pickerViewController];
 
   //[self checkPhotoAuthorizationForAccessLevel];
 }
