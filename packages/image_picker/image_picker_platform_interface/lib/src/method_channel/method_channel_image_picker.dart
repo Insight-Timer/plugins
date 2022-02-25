@@ -24,7 +24,6 @@ class MethodChannelImagePicker extends ImagePickerPlatform {
     double? maxHeight,
     int? imageQuality,
     CameraDevice preferredCameraDevice = CameraDevice.rear,
-    bool shouldCheckPhotoAuthorization = true,
   }) async {
     final String? path = await _getImagePath(
       source: source,
@@ -32,7 +31,6 @@ class MethodChannelImagePicker extends ImagePickerPlatform {
       maxHeight: maxHeight,
       imageQuality: imageQuality,
       preferredCameraDevice: preferredCameraDevice,
-      shouldCheckPhotoAuthorization: shouldCheckPhotoAuthorization,
     );
     return path != null ? PickedFile(path) : null;
   }

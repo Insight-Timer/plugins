@@ -123,6 +123,7 @@ class ImagePickerPlugin extends ImagePickerPlatform {
     double? maxHeight,
     int? imageQuality,
     CameraDevice preferredCameraDevice = CameraDevice.rear,
+    bool shouldCheckPhotoAuthorization = true,
   }) async {
     final String? capture =
         computeCaptureAttribute(source, preferredCameraDevice);
@@ -171,6 +172,7 @@ class ImagePickerPlugin extends ImagePickerPlatform {
     double? maxWidth,
     double? maxHeight,
     int? imageQuality,
+    bool shouldCheckPhotoAuthorization = true,
   }) async {
     final List<XFile> images = await getFiles(
       accept: _kAcceptImageMimeType,

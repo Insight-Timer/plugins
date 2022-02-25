@@ -192,7 +192,7 @@ class ImagePicker {
   /// to work on an Android device.
   ///
   /// Use `shouldCheckPhotoAuthorization` to specify whether we need to check photo authorization for iOS 14+.
-  /// The `shouldCheckPhotoAuthorization` is ignored when `source` is [ImageSource.camera] and it is only available on iOS platform. 
+  /// The `shouldCheckPhotoAuthorization` is ignored when `source` is [ImageSource.camera] and it is only available on iOS platform.
   /// This feature was introduced in iOS 14 that we don't need permission to pick image with PHPicker
   /// https://developer.apple.com/videos/play/wwdc2020/10641
   ///
