@@ -26,6 +26,10 @@ id GetNullableValueForKey(NSDictionary *dict, NSString *key) {
   return value == [NSNull null] ? nil : value;
 }
 
+BOOL GetBoolValueForKey(NSDictionary *dict, NSString *key) {
+    return [[dict objectForKey:key] boolValue];
+}
+
 @interface FLTImagePickerPlugin () <UINavigationControllerDelegate,
                                     UIImagePickerControllerDelegate,
                                     PHPickerViewControllerDelegate,
@@ -121,7 +125,7 @@ typedef NS_ENUM(NSInteger, ImagePickerClassType) { UIImagePickerClassType, PHPic
                              : UIImagePickerControllerCameraDeviceRear;
 }
 
-- (void)pickImageWithPHPicker:(int)maxImagesAllowed API_AVAILABLE(ios(14)) {
+- (void)pickImageWithPHPicker:(int)maxImagesAllowed shouldCheckPhotoAuthorization:(bool)shouldCheckPhotoAuthorization API_AVAILABLE(ios(14)) {
   PHPickerConfiguration *config =
       [[PHPickerConfiguration alloc] initWithPhotoLibrary:PHPhotoLibrary.sharedPhotoLibrary];
   config.selectionLimit = maxImagesAllowed;  // Setting to zero allow us to pick unlimited photos
@@ -133,7 +137,11 @@ typedef NS_ENUM(NSInteger, ImagePickerClassType) { UIImagePickerClassType, PHPic
 
   self.maxImagesAllowed = maxImagesAllowed;
 
-  [self checkPhotoAuthorizationForAccessLevel];
+  if (shouldCheckPhotoAuthorization) {
+    [self checkPhotoAuthorizationForAccessLevel];
+  } else {
+    [self showPhotoLibraryWithPHPicker:_pickerViewController];
+  }
 }
 
 - (void)launchUIImagePickerWithSource:(int)imageSource {
@@ -172,11 +180,12 @@ typedef NS_ENUM(NSInteger, ImagePickerClassType) { UIImagePickerClassType, PHPic
 
   if ([@"pickImage" isEqualToString:call.method]) {
     int imageSource = [call.arguments[@"source"] intValue];
+    bool shouldCheckPhotoAuthorization = [call.arguments[@"shouldCheckPhotoAuthorization"] boolValue];
 
     if (imageSource == SOURCE_GALLERY) {  // Capture is not possible with PHPicker
       if (@available(iOS 14, *)) {
         // PHPicker is used
-        [self pickImageWithPHPicker:1];
+        [self pickImageWithPHPicker:1 shouldCheckPhotoAuthorization: shouldCheckPhotoAuthorization];
       } else {
         // UIImagePicker is used
         [self launchUIImagePickerWithSource:imageSource];
@@ -185,8 +194,10 @@ typedef NS_ENUM(NSInteger, ImagePickerClassType) { UIImagePickerClassType, PHPic
       [self launchUIImagePickerWithSource:imageSource];
     }
   } else if ([@"pickMultiImage" isEqualToString:call.method]) {
+    bool shouldCheckPhotoAuthorization = [call.arguments[@"shouldCheckPhotoAuthorization"] boolValue];
+
     if (@available(iOS 14, *)) {
-      [self pickImageWithPHPicker:0];
+      [self pickImageWithPHPicker:0 shouldCheckPhotoAuthorization: shouldCheckPhotoAuthorization];
     } else {
       [self launchUIImagePickerWithSource:SOURCE_GALLERY];
     }
@@ -425,33 +436,38 @@ typedef NS_ENUM(NSInteger, ImagePickerClassType) { UIImagePickerClassType, PHPic
     }
     return;
   }
-  dispatch_queue_t backgroundQueue =
-      dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0);
-  dispatch_async(backgroundQueue, ^{
-    NSNumber *maxWidth = GetNullableValueForKey(self->_arguments, @"maxWidth");
-    NSNumber *maxHeight = GetNullableValueForKey(self->_arguments, @"maxHeight");
-    NSNumber *imageQuality = GetNullableValueForKey(self->_arguments, @"imageQuality");
-    NSNumber *desiredImageQuality = [self getDesiredImageQuality:imageQuality];
-    NSOperationQueue *operationQueue = [NSOperationQueue new];
-    NSMutableArray *pathList = [self createNSMutableArrayWithSize:results.count];
 
-    for (int i = 0; i < results.count; i++) {
-      PHPickerResult *result = results[i];
-      FLTPHPickerSaveImageToPathOperation *operation =
-          [[FLTPHPickerSaveImageToPathOperation alloc] initWithResult:result
-                                                            maxHeight:maxHeight
-                                                             maxWidth:maxWidth
-                                                  desiredImageQuality:desiredImageQuality
-                                                       savedPathBlock:^(NSString *savedPath) {
-                                                         pathList[i] = savedPath;
-                                                       }];
-      [operationQueue addOperation:operation];
-    }
-    [operationQueue waitUntilAllOperationsAreFinished];
-    dispatch_async(dispatch_get_main_queue(), ^{
-      [self handleSavedPathList:pathList];
+
+  BOOL shouldCheckPhotoAuthorization = GetBoolValueForKey(self->_arguments, @"shouldCheckPhotoAuthorization");
+
+  NSNumber *maxWidth = GetNullableValueForKey(self->_arguments, @"maxWidth");
+  NSNumber *maxHeight = GetNullableValueForKey(self->_arguments, @"maxHeight");
+  NSNumber *desiredImageQuality = GetNullableValueForKey(self->_arguments, @"imageQuality");
+      
+    dispatch_queue_t backgroundQueue =
+        dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0);
+    dispatch_async(backgroundQueue, ^{
+      NSOperationQueue *operationQueue = [NSOperationQueue new];
+      NSMutableArray *pathList = [self createNSMutableArrayWithSize:results.count];
+
+      for (int i = 0; i < results.count; i++) {
+        PHPickerResult *result = results[i];
+        FLTPHPickerSaveImageToPathOperation *operation =
+            [[FLTPHPickerSaveImageToPathOperation alloc] initWithResult:result
+                                                              maxHeight:maxHeight
+                                                                maxWidth:maxWidth
+                                                    desiredImageQuality:desiredImageQuality
+                                          shouldCheckPhotoAuthorization:shouldCheckPhotoAuthorization
+                                                          savedPathBlock:^(NSString *savedPath) {
+                                                            pathList[i] = savedPath;
+                                                          }];
+        [operationQueue addOperation:operation];
+      }
+      [operationQueue waitUntilAllOperationsAreFinished];
+      dispatch_async(dispatch_get_main_queue(), ^{
+        [self handleSavedPathList:pathList];
+      });
     });
-  });
 }
 
 /**

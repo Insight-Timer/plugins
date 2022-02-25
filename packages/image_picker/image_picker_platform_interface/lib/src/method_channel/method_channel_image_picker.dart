@@ -24,6 +24,7 @@ class MethodChannelImagePicker extends ImagePickerPlatform {
     double? maxHeight,
     int? imageQuality,
     CameraDevice preferredCameraDevice = CameraDevice.rear,
+    bool shouldCheckPhotoAuthorization = true,
   }) async {
     final String? path = await _getImagePath(
       source: source,
@@ -31,6 +32,7 @@ class MethodChannelImagePicker extends ImagePickerPlatform {
       maxHeight: maxHeight,
       imageQuality: imageQuality,
       preferredCameraDevice: preferredCameraDevice,
+      shouldCheckPhotoAuthorization: shouldCheckPhotoAuthorization,
     );
     return path != null ? PickedFile(path) : null;
   }
@@ -57,6 +59,7 @@ class MethodChannelImagePicker extends ImagePickerPlatform {
     double? maxWidth,
     double? maxHeight,
     int? imageQuality,
+    bool shouldCheckPhotoAuthorization = true,
   }) {
     if (imageQuality != null && (imageQuality < 0 || imageQuality > 100)) {
       throw ArgumentError.value(
@@ -77,6 +80,7 @@ class MethodChannelImagePicker extends ImagePickerPlatform {
         'maxWidth': maxWidth,
         'maxHeight': maxHeight,
         'imageQuality': imageQuality,
+        'shouldCheckPhotoAuthorization': shouldCheckPhotoAuthorization
       },
     );
   }
@@ -87,6 +91,7 @@ class MethodChannelImagePicker extends ImagePickerPlatform {
     double? maxHeight,
     int? imageQuality,
     CameraDevice preferredCameraDevice = CameraDevice.rear,
+    bool shouldCheckPhotoAuthorization = true,
   }) {
     if (imageQuality != null && (imageQuality < 0 || imageQuality > 100)) {
       throw ArgumentError.value(
@@ -108,7 +113,8 @@ class MethodChannelImagePicker extends ImagePickerPlatform {
         'maxWidth': maxWidth,
         'maxHeight': maxHeight,
         'imageQuality': imageQuality,
-        'cameraDevice': preferredCameraDevice.index
+        'cameraDevice': preferredCameraDevice.index,
+        'shouldCheckPhotoAuthorization': shouldCheckPhotoAuthorization
       },
     );
   }
@@ -186,6 +192,7 @@ class MethodChannelImagePicker extends ImagePickerPlatform {
     double? maxHeight,
     int? imageQuality,
     CameraDevice preferredCameraDevice = CameraDevice.rear,
+    bool shouldCheckPhotoAuthorization = true,
   }) async {
     final String? path = await _getImagePath(
       source: source,
@@ -193,6 +200,7 @@ class MethodChannelImagePicker extends ImagePickerPlatform {
       maxHeight: maxHeight,
       imageQuality: imageQuality,
       preferredCameraDevice: preferredCameraDevice,
+      shouldCheckPhotoAuthorization: shouldCheckPhotoAuthorization,
     );
     return path != null ? XFile(path) : null;
   }
@@ -202,11 +210,13 @@ class MethodChannelImagePicker extends ImagePickerPlatform {
     double? maxWidth,
     double? maxHeight,
     int? imageQuality,
+    bool shouldCheckPhotoAuthorization = true,
   }) async {
     final List<dynamic>? paths = await _getMultiImagePath(
       maxWidth: maxWidth,
       maxHeight: maxHeight,
       imageQuality: imageQuality,
+      shouldCheckPhotoAuthorization: shouldCheckPhotoAuthorization,
     );
     if (paths == null) {
       return null;

@@ -191,6 +191,12 @@ class ImagePicker {
   /// the front or rear camera should be opened, this function is not guaranteed
   /// to work on an Android device.
   ///
+  /// Use `shouldCheckPhotoAuthorization` to specify whether we need to check photo authorization for iOS 14+.
+  /// The `shouldCheckPhotoAuthorization` is ignored when `source` is [ImageSource.camera] and it is only available on iOS platform. 
+  /// This feature was introduced in iOS 14 that we don't need permission to pick image with PHPicker
+  /// https://developer.apple.com/videos/play/wwdc2020/10641
+  ///
+  ///
   /// In Android, the MainActivity can be destroyed for various reasons. If that happens, the result will be lost
   /// in this call. You can then call [retrieveLostData] when your app relaunches to retrieve the lost data.
   ///
@@ -206,6 +212,7 @@ class ImagePicker {
     double? maxHeight,
     int? imageQuality,
     CameraDevice preferredCameraDevice = CameraDevice.rear,
+    bool shouldCheckPhotoAuthorization = true,
   }) {
     return platform.getImage(
       source: source,
@@ -213,6 +220,7 @@ class ImagePicker {
       maxHeight: maxHeight,
       imageQuality: imageQuality,
       preferredCameraDevice: preferredCameraDevice,
+      shouldCheckPhotoAuthorization: shouldCheckPhotoAuthorization,
     );
   }
 
@@ -244,11 +252,13 @@ class ImagePicker {
     double? maxWidth,
     double? maxHeight,
     int? imageQuality,
+    bool shouldCheckPhotoAuthorization = true,
   }) {
     return platform.getMultiImage(
       maxWidth: maxWidth,
       maxHeight: maxHeight,
       imageQuality: imageQuality,
+      shouldCheckPhotoAuthorization: shouldCheckPhotoAuthorization,
     );
   }
 

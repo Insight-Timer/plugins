@@ -11,6 +11,7 @@ API_AVAILABLE(ios(14))
 @property(assign, nonatomic) NSNumber *maxHeight;
 @property(assign, nonatomic) NSNumber *maxWidth;
 @property(assign, nonatomic) NSNumber *desiredImageQuality;
+@property(assign, nonatomic) BOOL shouldCheckPhotoAuthorization;
 
 @end
 
@@ -26,6 +27,7 @@ typedef void (^GetSavedPath)(NSString *);
                      maxHeight:(NSNumber *)maxHeight
                       maxWidth:(NSNumber *)maxWidth
            desiredImageQuality:(NSNumber *)desiredImageQuality
+ shouldCheckPhotoAuthorization:(BOOL)shouldCheckPhotoAuthorization
                 savedPathBlock:(GetSavedPath)savedPathBlock API_AVAILABLE(ios(14)) {
   if (self = [super init]) {
     if (result) {
@@ -33,6 +35,7 @@ typedef void (^GetSavedPath)(NSString *);
       self.maxHeight = maxHeight;
       self.maxWidth = maxWidth;
       self.desiredImageQuality = desiredImageQuality;
+      self.shouldCheckPhotoAuthorization = shouldCheckPhotoAuthorization;
       getSavedPath = savedPathBlock;
       executing = NO;
       finished = NO;
@@ -88,17 +91,18 @@ typedef void (^GetSavedPath)(NSString *);
                             NSError *_Nullable error) {
           if ([image isKindOfClass:[UIImage class]]) {
             __block UIImage *localImage = image;
-            PHAsset *originalAsset =
-                [FLTImagePickerPhotoAssetUtil getAssetFromPHPickerResult:self.result];
+            __block PHAsset *originalAsset = nil;
 
-            if (self.maxWidth != nil || self.maxHeight != nil) {
+            if (self.shouldCheckPhotoAuthorization && (self.maxWidth != nil || self.maxHeight != nil)) {
+                originalAsset =
+                    [FLTImagePickerPhotoAssetUtil getAssetFromPHPickerResult:self.result];
               localImage = [FLTImagePickerImageUtil scaledImage:localImage
                                                        maxWidth:self.maxWidth
                                                       maxHeight:self.maxHeight
                                             isMetadataAvailable:originalAsset != nil];
             }
             __block NSString *savedPath;
-            if (!originalAsset) {
+            if (!self.shouldCheckPhotoAuthorization || !originalAsset) {
               // Image picked without an original asset (e.g. User pick image without permission)
               savedPath =
                   [FLTImagePickerPhotoAssetUtil saveImageWithPickerInfo:nil
