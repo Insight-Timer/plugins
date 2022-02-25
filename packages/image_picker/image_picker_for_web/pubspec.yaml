@@ -23,7 +23,10 @@ dependencies:
     sdk: flutter
   # image_picker_platform_interface: ^2.2.0
   image_picker_platform_interface:
-    path: ../image_picker_platform_interface
+    git:
+      url: git@github.com:Insight-Timer/plugins.git
+      path: packages/image_picker/image_picker_platform_interface
+      ref: support-no-permission-pick-iOS14
 
 dev_dependencies:
   flutter_test:
