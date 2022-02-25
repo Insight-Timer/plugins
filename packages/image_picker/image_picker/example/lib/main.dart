@@ -95,6 +95,7 @@ class _MyHomePageState extends State<MyHomePage> {
             maxWidth: maxWidth,
             maxHeight: maxHeight,
             imageQuality: quality,
+            shouldCheckPhotoAuthorization: false,
           );
           setState(() {
             _imageFileList = pickedFileList;
@@ -114,6 +115,7 @@ class _MyHomePageState extends State<MyHomePage> {
             maxWidth: maxWidth,
             maxHeight: maxHeight,
             imageQuality: quality,
+            shouldCheckPhotoAuthorization: false,
           );
           setState(() {
             _imageFile = pickedFile;
