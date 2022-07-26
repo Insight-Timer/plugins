@@ -162,6 +162,16 @@
       userInfo[key] = [FIAObjectTranslator getMapFromNSError:value];
     } else if ([value isKindOfClass:[NSURL class]]) {
       userInfo[key] = [value absoluteString];
+    } else if ([value isKindOfClass:[NSArray class]]) {
+        NSMutableArray *convertArr = @[].mutableCopy;
+        for (id item in value) {
+            if ([item isKindOfClass:[NSError class]]) {
+                [convertArr addObject:[FIAObjectTranslator getMapFromNSError:item]];
+            } else {
+                [convertArr addObject:item];
+            }
+        }
+      userInfo[key] = convertArr;
     } else {
       userInfo[key] = value;
     }
